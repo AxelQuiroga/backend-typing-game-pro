@@ -1,93 +1,49 @@
 import type { Request, Response } from 'express';
-import {
-  CreateScoreSchema,
-  GetScoresQuerySchema,
-} from '../dtos/score.dto';
 import * as ScoreService from '../services/score.service';
+import { getBody, getQuery } from '../middleware/types';
+import type { CreateScoreInput, GetScoresQuery } from '../dtos/score.dto';
 
 // ═══════════════════════════════════════════════════════════
-// ScoreController — HTTP Layer
+// ScoreController — HTTP handler layer
 //
-// Handles ONLY HTTP concerns:
-// - Extract data from req
-// - Validate via DTOs
-// - Call service
-// - Format response
+// DOES ONE THING: maps HTTP ↔ service calls.
+// - Reads validated data via getBody<T> / getQuery<T>
+// - Calls service
+// - Sends response
 //
-// Contains ZERO business logic.
+// NO validation. NO try/catch. NO business logic.
+// Express 5 handles async errors natively.
 // ═══════════════════════════════════════════════════════════
 
 /**
- * POST /api/scores — Submit a new score
+ * POST /api/scores
  */
 export async function createScore(req: Request, res: Response): Promise<void> {
-  const parsed = CreateScoreSchema.safeParse(req.body);
+  const input = getBody<CreateScoreInput>(req);
+  const { record, rank } = await ScoreService.createScore(input);
 
-  if (!parsed.success) {
-    res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: parsed.error.issues.map((i) => ({
-        field: i.path.join('.'),
-        message: i.message,
-      })),
-    });
-    return;
-  }
-
-  try {
-    const { record, rank } = await ScoreService.createScore(parsed.data);
-
-    res.status(201).json({
-      success: true,
-      rank,
-      message: 'Score recorded',
-      data: {
-        id: record.id,
-        nickname: record.nickname,
-        score: record.score,
-        level: record.level,
-      },
-    });
-  } catch (error) {
-    console.error('[Controller] Error creating score:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
-  }
+  res.status(201).json({
+    success: true,
+    rank,
+    message: 'Score recorded',
+    data: {
+      id: record.id,
+      nickname: record.nickname,
+      score: record.score,
+      level: record.level,
+    },
+  });
 }
 
 /**
- * GET /api/scores — Get leaderboard
+ * GET /api/scores
  */
 export async function getLeaderboard(req: Request, res: Response): Promise<void> {
-  const parsed = GetScoresQuerySchema.safeParse(req.query);
+  const { limit } = getQuery<GetScoresQuery>(req);
+  const scores = await ScoreService.getLeaderboard(limit);
 
-  if (!parsed.success) {
-    res.status(400).json({
-      success: false,
-      message: 'Invalid query parameters',
-      errors: parsed.error.issues.map((i) => ({
-        field: i.path.join('.'),
-        message: i.message,
-      })),
-    });
-    return;
-  }
-
-  try {
-    const scores = await ScoreService.getLeaderboard(parsed.data.limit);
-
-    res.json({
-      success: true,
-      data: scores,
-    });
-  } catch (error) {
-    console.error('[Controller] Error fetching leaderboard:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
-  }
+  res.json({
+    success: true,
+    data: scores,
+  });
 }

@@ -4,14 +4,21 @@ import { type ZodSchema, ZodError } from 'zod';
 // ═══════════════════════════════════════════════════════════
 // validate — Zod validation middleware factory
 //
-// Extracts ALL validation boilerplate from controllers.
-// Usage: router.post('/', validate(CreateScoreSchema), handler)
-//
-// Attaches validated+parsed data to req.body or req.query
-// so controllers never touch raw, unvalidated input.
+// Express 5 made req.query and req.params read-only getters.
+// We store validated data in req._validated instead of
+// overwriting the original properties.
 // ═══════════════════════════════════════════════════════════
 
 type ValidationTarget = 'body' | 'query' | 'params';
+
+// Extend Request to hold validated data
+declare global {
+  namespace Express {
+    interface Request {
+      _validated?: Record<string, unknown>;
+    }
+  }
+}
 
 export function validate(
   schema: ZodSchema,
@@ -20,8 +27,17 @@ export function validate(
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       const parsed = schema.parse(req[target]);
-      // Replace raw input with validated+parsed data
-      req[target] = parsed;
+
+      // Express 5: req.query and req.params are getter-only.
+      // Store validated data in a custom property.
+      if (!req._validated) req._validated = {};
+      req._validated[target] = parsed;
+
+      // req.body is still writable in Express 5, so keep backward compat
+      if (target === 'body') {
+        req.body = parsed;
+      }
+
       next();
     } catch (error) {
       if (error instanceof ZodError) {

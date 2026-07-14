@@ -24,6 +24,7 @@ model Score {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([score(sort: Desc)])
+  @@index([nickname, score(sort: Desc)])
   @@map("scores")
 }
 

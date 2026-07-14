@@ -53,14 +53,13 @@ export async function seedAchievements(): Promise<void> {
 /**
  * Check a score against all achievement rules.
  * Returns newly unlocked achievements (skips already-unlocked ones).
+ * 
+ * Prerequisites: seedAchievements() must have been called on startup.
  */
 export async function checkAndUnlock(
   nickname: string,
   scoreInput: ScoreInput,
 ): Promise<UnlockedAchievement[]> {
-  // Ensure achievements exist in DB
-  await seedAchievements();
-
   // Get player's existing unlocks
   const existing = await prisma.playerAchievement.findMany({
     where: { nickname },

@@ -87,6 +87,7 @@ export async function getLeaderboard(
 
 /**
  * Get a player's score history, ordered by best score first.
+ * Uses batch rank computation to avoid N+1 queries.
  */
 export async function getPlayerScores(
   nickname: string,
@@ -98,15 +99,28 @@ export async function getPlayerScores(
     take: limit,
   });
 
-  // Compute each entry's global rank
-  const entries = await Promise.all(
-    scores.map(async (score) => ({
-      ...score,
-      rank: await getPlayerRank(score.score),
-    })),
+  if (scores.length === 0) return [];
+
+  // Batch rank: get distinct score values and count higher scores for each
+  const distinctScores = [...new Set(scores.map((s) => s.score))];
+  
+  // Single query to count how many scores are higher than each distinct value
+  const rankCounts = await Promise.all(
+    distinctScores.map(async (scoreValue) => {
+      const higherCount = await prisma.score.count({
+        where: { score: { gt: scoreValue } },
+      });
+      return { score: scoreValue, rank: higherCount + 1 };
+    }),
   );
 
-  return entries;
+  // Build a lookup map: score value → rank
+  const rankMap = new Map(rankCounts.map((r) => [r.score, r.rank]));
+
+  return scores.map((score) => ({
+    ...score,
+    rank: rankMap.get(score.score) ?? 0,
+  }));
 }
 
 /**
@@ -137,46 +151,59 @@ export interface PlayerStats {
 
 /**
  * Get aggregated stats for a player.
+ * Uses Prisma aggregate instead of loading all records into memory.
  */
 export async function getPlayerStats(nickname: string): Promise<PlayerStats | null> {
-  const scores = await prisma.score.findMany({
+  // Single aggregate query for all stats
+  const aggregate = await prisma.score.aggregate({
     where: { nickname },
-    orderBy: { createdAt: 'asc' },
+    _count: true,
+    _sum: {
+      wordsCompleted: true,
+      correctLetters: true,
+      totalLetters: true,
+    },
+    _avg: {
+      score: true,
+      accuracy: true,
+    },
+    _max: {
+      score: true,
+      level: true,
+    },
   });
 
-  if (scores.length === 0) return null;
+  if (aggregate._count === 0) return null;
 
-  const totalGames = scores.length;
-  const bestScore = Math.max(...scores.map((s) => s.score));
-  const avgScore = Math.round(scores.reduce((sum, s) => sum + s.score, 0) / totalGames);
-  const bestLevel = Math.max(...scores.map((s) => s.level));
-  const avgAccuracy =
-    Math.round(
-      (scores.reduce((sum, s) => sum + s.accuracy, 0) / totalGames) * 100,
-    ) / 100;
-  const totalWordsCompleted = scores.reduce((sum, s) => sum + s.wordsCompleted, 0);
-  const totalCorrectLetters = scores.reduce((sum, s) => sum + s.correctLetters, 0);
-  const totalLettersTyped = scores.reduce((sum, s) => sum + s.totalLetters, 0);
-
-  // Last 20 scores for chart
-  const recent = scores.slice(-20);
-  const scoreHistory = recent.map((s) => ({
-    score: s.score,
-    accuracy: s.accuracy,
-    level: s.level,
-    date: s.createdAt.toISOString(),
-  }));
+  // Last 20 scores for chart (separate query, limited)
+  const recentScores = await prisma.score.findMany({
+    where: { nickname },
+    orderBy: { createdAt: 'asc' },
+    take: 20,
+    skip: Math.max(0, aggregate._count - 20), // skip to last 20
+    select: {
+      score: true,
+      accuracy: true,
+      level: true,
+      createdAt: true,
+    },
+  });
 
   return {
     nickname,
-    totalGames,
-    bestScore,
-    avgScore,
-    bestLevel,
-    avgAccuracy,
-    totalWordsCompleted,
-    totalCorrectLetters,
-    totalLettersTyped,
-    scoreHistory,
+    totalGames: aggregate._count,
+    bestScore: aggregate._max.score ?? 0,
+    avgScore: Math.round(aggregate._avg.score ?? 0),
+    bestLevel: aggregate._max.level ?? 0,
+    avgAccuracy: Math.round((aggregate._avg.accuracy ?? 0) * 100) / 100,
+    totalWordsCompleted: aggregate._sum.wordsCompleted ?? 0,
+    totalCorrectLetters: aggregate._sum.correctLetters ?? 0,
+    totalLettersTyped: aggregate._sum.totalLetters ?? 0,
+    scoreHistory: recentScores.map((s) => ({
+      score: s.score,
+      accuracy: s.accuracy,
+      level: s.level,
+      date: s.createdAt.toISOString(),
+    })),
   };
 }

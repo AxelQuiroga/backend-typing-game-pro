@@ -1,14 +1,16 @@
 import app from './app';
 import { config } from './config/env';
 import { prisma } from './config/db';
+import { seedAchievements } from './achievements/service';
 
 // ═══════════════════════════════════════════════════════════
 // Server Entry Point
 //
 // Responsibilities:
 // 1. Connect to database
-// 2. Start HTTP server
-// 3. Handle graceful shutdown
+// 2. Seed achievements (once, on startup)
+// 3. Start HTTP server
+// 4. Handle graceful shutdown
 //
 // NOTHING else. No routes, no logic, no config.
 // ═══════════════════════════════════════════════════════════
@@ -21,6 +23,15 @@ async function main(): Promise<void> {
   } catch (error) {
     console.error('❌ Failed to connect to database:', error);
     process.exit(1);
+  }
+
+  // ── Seed achievements (idempotent — safe to run on every startup) ──
+  try {
+    await seedAchievements();
+    console.log('✅ Achievements seeded');
+  } catch (error) {
+    console.error('⚠️ Achievement seeding failed (non-fatal):', error);
+    // Don't exit — the app can still work, achievement checks will just skip
   }
 
   // ── Start HTTP server ──

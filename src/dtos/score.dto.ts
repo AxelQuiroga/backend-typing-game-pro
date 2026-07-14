@@ -34,6 +34,16 @@ export const CreateScoreSchema = z.object({
     .int('Words completed must be an integer')
     .nonnegative('Words completed must be non-negative')
     .max(10_000, 'Words completed is suspiciously high'),
+  correctLetters: z
+    .number()
+    .int('Correct letters must be an integer')
+    .nonnegative('Correct letters must be non-negative')
+    .max(100_000, 'Correct letters is suspiciously high'),
+  totalLetters: z
+    .number()
+    .int('Total letters must be an integer')
+    .nonnegative('Total letters must be non-negative')
+    .max(100_000, 'Total letters is suspiciously high'),
   timestamp: z.string().datetime().optional(),
 });
 

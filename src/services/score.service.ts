@@ -15,6 +15,8 @@ export interface ScoreRecord {
   score: number;
   level: number;
   wordsCompleted: number;
+  correctLetters: number;
+  totalLetters: number;
   accuracy: number;
   createdAt: Date;
 }
@@ -30,11 +32,10 @@ export interface LeaderboardEntry extends ScoreRecord {
 export async function createScore(
   input: CreateScoreInput,
 ): Promise<{ record: ScoreRecord; rank: number }> {
-  // Calculate accuracy: wordsCompleted / level * 10 (heuristic)
-  // If frontend provides accuracy later, we can use that instead.
+  // Calculate real accuracy from letter tracking
   const accuracy =
-    input.wordsCompleted > 0
-      ? Math.min(100, (input.wordsCompleted / (input.level * 5)) * 100)
+    input.totalLetters > 0
+      ? Math.round((input.correctLetters / input.totalLetters) * 10000) / 100
       : 0;
 
   const record = await prisma.score.create({
@@ -43,7 +44,9 @@ export async function createScore(
       score: input.score,
       level: input.level,
       wordsCompleted: input.wordsCompleted,
-      accuracy: Math.round(accuracy * 100) / 100, // 2 decimal places
+      correctLetters: input.correctLetters,
+      totalLetters: input.totalLetters,
+      accuracy,
     },
   });
 

@@ -17,6 +17,8 @@ model Score {
   score     Int
   level     Int
   wordsCompleted Int @default(0)
+  correctLetters Int @default(0)
+  totalLetters   Int @default(0)
   accuracy  Float    @default(0)
   createdAt DateTime @default(now()) @map("created_at")
 

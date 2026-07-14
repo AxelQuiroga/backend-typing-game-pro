@@ -4,7 +4,9 @@
 
 import { Router } from 'express';
 import { validate } from '../middleware/validate';
+import { achievementCheckLimiter } from '../middleware/rateLimit';
 import { z } from 'zod';
+import { AchievementsCheckSchema } from '../dtos/score.dto';
 import * as AchievementController from '../controllers/achievement.controller';
 
 const router = Router();
@@ -30,7 +32,9 @@ router.get(
 // ── Check achievements against a score ──
 router.post(
   '/check/:nickname',
+  achievementCheckLimiter,
   validate(PlayerParamsSchema, 'params'),
+  validate(AchievementsCheckSchema, 'body'),
   AchievementController.checkAchievements,
 );
 

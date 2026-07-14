@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { config } from './config/env';
+import { globalLimiter } from './middleware/rateLimit';
 import scoresRouter from './routes/scores.routes';
 import achievementsRouter from './routes/achievements.routes';
 import sseRouter from './routes/sse.routes';
@@ -30,6 +31,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type'],
 }));
 app.use(express.json({ limit: '10kb' })); // Limit body size — security
+app.use(globalLimiter); // Rate limit all endpoints
 
 // ── Health Check ──
 app.get('/api/health', (_req, res) => {

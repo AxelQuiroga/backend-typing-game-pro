@@ -113,3 +113,51 @@ export const StatsParamsSchema = z.object({
 });
 
 export type StatsParams = z.infer<typeof StatsParamsSchema>;
+
+/** Schema for POST /api/achievements/check/:nickname — achievement evaluation */
+export const AchievementsCheckSchema = z.object({
+  score: z
+    .number()
+    .int('Score must be an integer')
+    .nonnegative('Score must be non-negative')
+    .max(10_000_000, 'Score is suspiciously high'),
+  level: z
+    .number()
+    .int('Level must be an integer')
+    .min(1, 'Level must be at least 1')
+    .max(100, 'Level must be at most 100'),
+  wordsCompleted: z
+    .number()
+    .int('Words completed must be an integer')
+    .nonnegative('Words completed must be non-negative')
+    .max(10_000, 'Words completed is suspiciously high'),
+  correctLetters: z
+    .number()
+    .int('Correct letters must be an integer')
+    .nonnegative('Correct letters must be non-negative')
+    .max(100_000, 'Correct letters is suspiciously high'),
+  totalLetters: z
+    .number()
+    .int('Total letters must be an integer')
+    .nonnegative('Total letters must be non-negative')
+    .max(100_000, 'Total letters is suspiciously high'),
+  accuracy: z
+    .number()
+    .min(0, 'Accuracy must be at least 0')
+    .max(100, 'Accuracy must be at most 100'),
+  maxCombo: z
+    .number()
+    .int('Max combo must be an integer')
+    .nonnegative('Max combo must be non-negative')
+    .max(10_000, 'Max combo is suspiciously high')
+    .optional()
+    .default(0),
+  totalGames: z
+    .number()
+    .int('Total games must be an integer')
+    .nonnegative('Total games must be non-negative')
+    .max(100_000, 'Total games is suspiciously high')
+    .optional(),
+});
+
+export type AchievementsCheckInput = z.infer<typeof AchievementsCheckSchema>;

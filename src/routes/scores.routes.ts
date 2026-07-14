@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as ScoreController from '../controllers/score.controller';
 import { validate } from '../middleware/validate';
+import { scoreSubmitLimiter } from '../middleware/rateLimit';
 import {
   CreateScoreSchema,
   GetScoresQuerySchema,
@@ -53,6 +54,7 @@ router.get(
 // ── Submit score ──
 router.post(
   '/',
+  scoreSubmitLimiter,
   validate(CreateScoreSchema, 'body'),
   ScoreController.createScore,
 );

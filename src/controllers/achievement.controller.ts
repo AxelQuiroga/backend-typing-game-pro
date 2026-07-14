@@ -4,7 +4,8 @@
 
 import type { Request, Response } from 'express';
 import * as AchievementService from '../achievements/service';
-import { getParams } from '../middleware/types';
+import { getParams, getBody } from '../middleware/types';
+import type { AchievementsCheckInput } from '../dtos/score.dto';
 
 interface PlayerParams {
   nickname: string;
@@ -50,7 +51,7 @@ export async function getAchievementProgress(req: Request, res: Response): Promi
  */
 export async function checkAchievements(req: Request, res: Response): Promise<void> {
   const { nickname } = getParams<PlayerParams>(req);
-  const scoreInput = req.body as import('../achievements/definitions').ScoreInput;
+  const scoreInput = getBody<AchievementsCheckInput>(req);
 
   const newlyUnlocked = await AchievementService.checkAndUnlock(nickname, scoreInput);
 

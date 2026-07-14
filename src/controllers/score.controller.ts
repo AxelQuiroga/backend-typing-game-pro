@@ -7,6 +7,7 @@ import type {
   PlayerParams,
   PlayerHistoryQuery,
   RankParams,
+  StatsParams,
 } from '../dtos/score.dto';
 
 // ═══════════════════════════════════════════════════════════
@@ -78,5 +79,26 @@ export async function getPlayerRank(req: Request, res: Response): Promise<void> 
   res.json({
     success: true,
     rank,
+  });
+}
+
+/**
+ * GET /api/scores/stats/:nickname
+ */
+export async function getPlayerStats(req: Request, res: Response): Promise<void> {
+  const { nickname } = getParams<StatsParams>(req);
+  const stats = await ScoreService.getPlayerStats(nickname);
+
+  if (!stats) {
+    res.status(404).json({
+      success: false,
+      message: 'No scores found for this player',
+    });
+    return;
+  }
+
+  res.json({
+    success: true,
+    data: stats,
   });
 }

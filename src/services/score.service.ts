@@ -118,3 +118,63 @@ export async function getPlayerBest(
     orderBy: { score: 'desc' },
   });
 }
+
+export interface PlayerStats {
+  nickname: string;
+  totalGames: number;
+  bestScore: number;
+  avgScore: number;
+  bestLevel: number;
+  avgAccuracy: number;
+  totalWordsCompleted: number;
+  totalCorrectLetters: number;
+  totalLettersTyped: number;
+  /** Last 20 scores for the chart, ordered by date */
+  scoreHistory: Array<{ score: number; accuracy: number; level: number; date: string }>;
+}
+
+/**
+ * Get aggregated stats for a player.
+ */
+export async function getPlayerStats(nickname: string): Promise<PlayerStats | null> {
+  const scores = await prisma.score.findMany({
+    where: { nickname },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  if (scores.length === 0) return null;
+
+  const totalGames = scores.length;
+  const bestScore = Math.max(...scores.map((s) => s.score));
+  const avgScore = Math.round(scores.reduce((sum, s) => sum + s.score, 0) / totalGames);
+  const bestLevel = Math.max(...scores.map((s) => s.level));
+  const avgAccuracy =
+    Math.round(
+      (scores.reduce((sum, s) => sum + s.accuracy, 0) / totalGames) * 100,
+    ) / 100;
+  const totalWordsCompleted = scores.reduce((sum, s) => sum + s.wordsCompleted, 0);
+  const totalCorrectLetters = scores.reduce((sum, s) => sum + s.correctLetters, 0);
+  const totalLettersTyped = scores.reduce((sum, s) => sum + s.totalLetters, 0);
+
+  // Last 20 scores for chart
+  const recent = scores.slice(-20);
+  const scoreHistory = recent.map((s) => ({
+    score: s.score,
+    accuracy: s.accuracy,
+    level: s.level,
+    date: s.createdAt.toISOString(),
+  }));
+
+  return {
+    nickname,
+    totalGames,
+    bestScore,
+    avgScore,
+    bestLevel,
+    avgAccuracy,
+    totalWordsCompleted,
+    totalCorrectLetters,
+    totalLettersTyped,
+    scoreHistory,
+  };
+}

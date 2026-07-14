@@ -94,3 +94,15 @@ export const RankParamsSchema = z.object({
 });
 
 export type RankParams = z.infer<typeof RankParamsSchema>;
+
+/** Schema for GET /api/scores/stats/:nickname */
+export const StatsParamsSchema = z.object({
+  nickname: z
+    .string()
+    .trim()
+    .min(2)
+    .max(30)
+    .regex(/^[a-zA-Z0-9_-]+$/),
+});
+
+export type StatsParams = z.infer<typeof StatsParamsSchema>;

@@ -7,6 +7,7 @@ import {
   PlayerParamsSchema,
   PlayerHistoryQuerySchema,
   RankParamsSchema,
+  StatsParamsSchema,
 } from '../dtos/score.dto';
 
 // ═══════════════════════════════════════════════════════════
@@ -40,6 +41,13 @@ router.get(
   '/rank/:score',
   validate(RankParamsSchema, 'params'),
   ScoreController.getPlayerRank,
+);
+
+// ── Player stats ──
+router.get(
+  '/stats/:nickname',
+  validate(StatsParamsSchema, 'params'),
+  ScoreController.getPlayerStats,
 );
 
 // ── Submit score ──

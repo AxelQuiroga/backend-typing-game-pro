@@ -21,4 +21,5 @@ export const config = {
   port: parseInt(process.env['PORT'] ?? '3001', 10),
   nodeEnv: process.env['NODE_ENV'] ?? 'development',
   databaseUrl: requireEnv('DATABASE_URL'),
+  corsOrigins: process.env['CORS_ORIGINS'] ?? 'http://localhost:5173,http://localhost:5174,http://localhost:3000',
 } as const;

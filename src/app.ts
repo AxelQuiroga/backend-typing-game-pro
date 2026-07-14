@@ -3,6 +3,7 @@ import cors from 'cors';
 import { config } from './config/env';
 import scoresRouter from './routes/scores.routes';
 import achievementsRouter from './routes/achievements.routes';
+import sseRouter from './routes/sse.routes';
 
 // ═══════════════════════════════════════════════════════════
 // Express Application — Composition Root
@@ -40,6 +41,7 @@ app.get('/api/health', (_req, res) => {
 // ── Routes ──
 app.use('/api/scores', scoresRouter);
 app.use('/api/achievements', achievementsRouter);
+app.use('/api/sse', sseRouter);
 
 // ── 404 Handler ──
 app.use((_req, res) => {

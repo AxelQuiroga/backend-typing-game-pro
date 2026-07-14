@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import * as ScoreService from '../services/score.service';
 import * as AchievementService from '../achievements/service';
+import * as SSEService from '../services/sse.service';
 import { getBody, getQuery, getParams } from '../middleware/types';
 import type {
   CreateScoreInput,
@@ -40,6 +41,25 @@ export async function createScore(req: Request, res: Response): Promise<void> {
     accuracy: record.accuracy,
     maxCombo: input.maxCombo,
   });
+
+  // Broadcast to SSE clients
+  SSEService.broadcastScore({
+    nickname: input.nickname,
+    score: input.score,
+    level: input.level,
+    rank,
+    accuracy: record.accuracy,
+  });
+
+  // Broadcast achievements
+  for (const ach of newAchievements) {
+    SSEService.broadcastAchievement({
+      nickname: input.nickname,
+      key: ach.key,
+      name: ach.name,
+      icon: ach.icon,
+    });
+  }
 
   res.status(201).json({
     success: true,

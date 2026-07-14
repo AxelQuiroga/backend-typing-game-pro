@@ -26,6 +26,17 @@ export interface LeaderboardEntry extends ScoreRecord {
 }
 
 /**
+ * Compute the global rank for a given score.
+ * Counts how many scores are strictly higher + 1.
+ */
+export async function getPlayerRank(score: number): Promise<number> {
+  const higherCount = await prisma.score.count({
+    where: { score: { gt: score } },
+  });
+  return higherCount + 1;
+}
+
+/**
  * Create a new score record.
  * Returns the created score with its global rank.
  */
@@ -50,15 +61,9 @@ export async function createScore(
     },
   });
 
-  // Compute rank: count how many scores are higher
-  const higherCount = await prisma.score.count({
-    where: { score: { gt: record.score } },
-  });
+  const rank = await getPlayerRank(record.score);
 
-  return {
-    record,
-    rank: higherCount + 1,
-  };
+  return { record, rank };
 }
 
 /**
@@ -76,6 +81,30 @@ export async function getLeaderboard(
     ...score,
     rank: index + 1,
   }));
+}
+
+/**
+ * Get a player's score history, ordered by best score first.
+ */
+export async function getPlayerScores(
+  nickname: string,
+  limit: number = 20,
+): Promise<LeaderboardEntry[]> {
+  const scores = await prisma.score.findMany({
+    where: { nickname },
+    orderBy: [{ score: 'desc' }, { createdAt: 'asc' }],
+    take: limit,
+  });
+
+  // Compute each entry's global rank
+  const entries = await Promise.all(
+    scores.map(async (score) => ({
+      ...score,
+      rank: await getPlayerRank(score.score),
+    })),
+  );
+
+  return entries;
 }
 
 /**

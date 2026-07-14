@@ -1,13 +1,19 @@
 import type { Request, Response } from 'express';
 import * as ScoreService from '../services/score.service';
-import { getBody, getQuery } from '../middleware/types';
-import type { CreateScoreInput, GetScoresQuery } from '../dtos/score.dto';
+import { getBody, getQuery, getParams } from '../middleware/types';
+import type {
+  CreateScoreInput,
+  GetScoresQuery,
+  PlayerParams,
+  PlayerHistoryQuery,
+  RankParams,
+} from '../dtos/score.dto';
 
 // ═══════════════════════════════════════════════════════════
 // ScoreController — HTTP handler layer
 //
 // DOES ONE THING: maps HTTP ↔ service calls.
-// - Reads validated data via getBody<T> / getQuery<T>
+// - Reads validated data via getBody<T> / getQuery<T> / getParams<T>
 // - Calls service
 // - Sends response
 //
@@ -45,5 +51,32 @@ export async function getLeaderboard(req: Request, res: Response): Promise<void>
   res.json({
     success: true,
     data: scores,
+  });
+}
+
+/**
+ * GET /api/scores/player/:nickname
+ */
+export async function getPlayerScores(req: Request, res: Response): Promise<void> {
+  const { nickname } = getParams<PlayerParams>(req);
+  const { limit } = getQuery<PlayerHistoryQuery>(req);
+  const scores = await ScoreService.getPlayerScores(nickname, limit);
+
+  res.json({
+    success: true,
+    data: scores,
+  });
+}
+
+/**
+ * GET /api/scores/rank/:score
+ */
+export async function getPlayerRank(req: Request, res: Response): Promise<void> {
+  const { score } = getParams<RankParams>(req);
+  const rank = await ScoreService.getPlayerRank(score);
+
+  res.json({
+    success: true,
+    rank,
   });
 }

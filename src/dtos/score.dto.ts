@@ -60,3 +60,37 @@ export const GetScoresQuerySchema = z.object({
 });
 
 export type GetScoresQuery = z.infer<typeof GetScoresQuerySchema>;
+
+/** Schema for GET /api/scores/player/:nickname */
+export const PlayerParamsSchema = z.object({
+  nickname: z
+    .string()
+    .trim()
+    .min(2)
+    .max(30)
+    .regex(/^[a-zA-Z0-9_-]+$/),
+});
+
+export type PlayerParams = z.infer<typeof PlayerParamsSchema>;
+
+/** Schema for GET /api/scores/player/:nickname/history query */
+export const PlayerHistoryQuerySchema = z.object({
+  limit: z
+    .string()
+    .optional()
+    .default('20')
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(100)),
+});
+
+export type PlayerHistoryQuery = z.infer<typeof PlayerHistoryQuerySchema>;
+
+/** Schema for GET /api/scores/rank/:score params */
+export const RankParamsSchema = z.object({
+  score: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().nonnegative()),
+});
+
+export type RankParams = z.infer<typeof RankParamsSchema>;

@@ -18,6 +18,7 @@ export interface ScoreRecord {
   correctLetters: number;
   totalLetters: number;
   accuracy: number;
+  maxCombo: number;
   createdAt: Date;
 }
 
@@ -57,6 +58,7 @@ export async function createScore(
       wordsCompleted: input.wordsCompleted,
       correctLetters: input.correctLetters,
       totalLetters: input.totalLetters,
+      maxCombo: input.maxCombo,
       accuracy,
     },
   });

@@ -20,8 +20,35 @@ model Score {
   correctLetters Int @default(0)
   totalLetters   Int @default(0)
   accuracy  Float    @default(0)
+  maxCombo  Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([score(sort: Desc)])
   @@map("scores")
+}
+
+model Achievement {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  description String   @db.VarChar(255)
+  icon        String   @db.VarChar(10)
+  category    String   @db.VarChar(30)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  players PlayerAchievement[]
+
+  @@map("achievements")
+}
+
+model PlayerAchievement {
+  id          Int      @id @default(autoincrement())
+  nickname    String   @db.VarChar(30)
+  achievement Int
+  unlockedAt  DateTime @default(now()) @map("unlocked_at")
+
+  achievementRef Achievement @relation(fields: [achievement], references: [id])
+
+  @@unique([nickname, achievement])
+  @@map("player_achievements")
 }

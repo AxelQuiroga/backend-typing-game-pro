@@ -44,6 +44,13 @@ export const CreateScoreSchema = z.object({
     .int('Total letters must be an integer')
     .nonnegative('Total letters must be non-negative')
     .max(100_000, 'Total letters is suspiciously high'),
+  maxCombo: z
+    .number()
+    .int('Max combo must be an integer')
+    .nonnegative('Max combo must be non-negative')
+    .max(10_000, 'Max combo is suspiciously high')
+    .optional()
+    .default(0),
   timestamp: z.string().datetime().optional(),
 });
 

@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import * as ScoreService from '../services/score.service';
+import * as AchievementService from '../achievements/service';
 import { getBody, getQuery, getParams } from '../middleware/types';
 import type {
   CreateScoreInput,
@@ -29,6 +30,17 @@ export async function createScore(req: Request, res: Response): Promise<void> {
   const input = getBody<CreateScoreInput>(req);
   const { record, rank } = await ScoreService.createScore(input);
 
+  // Check achievements
+  const newAchievements = await AchievementService.checkAndUnlock(input.nickname, {
+    score: input.score,
+    level: input.level,
+    wordsCompleted: input.wordsCompleted,
+    correctLetters: input.correctLetters,
+    totalLetters: input.totalLetters,
+    accuracy: record.accuracy,
+    maxCombo: input.maxCombo,
+  });
+
   res.status(201).json({
     success: true,
     rank,
@@ -39,6 +51,7 @@ export async function createScore(req: Request, res: Response): Promise<void> {
       score: record.score,
       level: record.level,
     },
+    newAchievements,
   });
 }
 
